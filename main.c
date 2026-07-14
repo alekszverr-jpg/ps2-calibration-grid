@@ -247,17 +247,11 @@ static unsigned int read_buttons(void)
 
 static void init_pad(void)
 {
-    int i;
     SifInitRpc(0);
     SifLoadModule("rom0:SIO2MAN", 0, NULL);
     SifLoadModule("rom0:PADMAN", 0, NULL);
     padInit(0);
     padPortOpen(0, 0, pad_buffer);
-    for (i = 0; i < 120; ++i) {
-        int state = padGetState(0, 0);
-        if (state == PAD_STATE_STABLE || state == PAD_STATE_FINDCTP1) break;
-        DelayThread(16000);
-    }
 }
 
 int main(int argc, char *argv[])
