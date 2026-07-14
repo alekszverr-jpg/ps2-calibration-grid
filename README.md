@@ -38,8 +38,10 @@ gsKit can also build it by running `make`.
 ## Project status
 
 The ELF is compiled and structurally validated by the current PS2 toolchain.
-It has not yet been tested on physical PlayStation 2 hardware. Please report
-the console model, cable type, and video mode when opening an issue.
+It has also been successfully launched and tested on the project owner's
+physical PlayStation 2. Compatibility with every console revision, cable type,
+and display is not guaranteed; please include those details when opening an
+issue.
 
 ## Safety
 
