@@ -44,12 +44,11 @@ gsKit can also build it by running `make`.
 
 ## Project status
 
-The v1.0 ELF is compiled and structurally validated by the current PS2
-toolchain. It has also been successfully launched and tested on the project
-owner's physical PlayStation 2. The new v1.1 video modes and exit command still
-require physical-hardware validation. Compatibility with every console
-revision, cable type, and display is not guaranteed; please include those
-details when opening an issue.
+Version 1.1 has been successfully tested by the project owner on a physical
+PlayStation 2 connected to a JVC AV-2130SE CRT television. PAL 576i, PAL 288p,
+NTSC 480i, NTSC 240p, safe automatic/manual mode rollback, and the exit command
+were verified. Compatibility with every console revision, cable type, and
+display is not guaranteed; please include those details when opening an issue.
 
 ## Safety
 
