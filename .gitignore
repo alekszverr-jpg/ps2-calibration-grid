@@ -2,3 +2,4 @@
 *.elf
 *.elf.sha256
 gh-auth.*
+release/
