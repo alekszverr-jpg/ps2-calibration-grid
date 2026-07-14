@@ -9,15 +9,48 @@
 #include <stdint.h>
 #include <string.h>
 
-#define APP_VERSION "1.0"
+#define APP_VERSION "1.1-rc1"
 #define PATTERN_COUNT 5
+#define VIDEO_MODE_COUNT 4
+#define LOGICAL_WIDTH 640
+#define LOGICAL_HEIGHT 480
+#define MODE_CONFIRM_SECONDS 10
+
+typedef struct {
+    const char *name;
+    short mode;
+    short interlace;
+    short field;
+    int width;
+    int height;
+    int refresh_hz;
+} VideoMode;
+
+static const VideoMode video_modes[VIDEO_MODE_COUNT] = {
+    {"PAL 576I",  GS_MODE_PAL,  GS_INTERLACED,    GS_FIELD, 640, 512, 50},
+    {"PAL 288P",  GS_MODE_PAL,  GS_NONINTERLACED, GS_FRAME, 640, 256, 50},
+    {"NTSC 480I", GS_MODE_NTSC, GS_INTERLACED,    GS_FIELD, 640, 448, 60},
+    {"NTSC 240P", GS_MODE_NTSC, GS_NONINTERLACED, GS_FRAME, 640, 224, 60}
+};
 
 static GSGLOBAL *gs;
 static unsigned char pad_buffer[256] __attribute__((aligned(64)));
 static unsigned int old_buttons;
 static int pattern;
-static int pal_mode = 1;
 static int show_help = 1;
+static int video_mode_index;
+static int previous_video_mode;
+static int mode_confirm_frames;
+
+static const VideoMode *current_video_mode(void)
+{
+    return &video_modes[video_mode_index];
+}
+
+static float screen_y(float logical_y)
+{
+    return logical_y * (float)gs->Height / (float)LOGICAL_HEIGHT;
+}
 
 static u64 rgb(unsigned int r, unsigned int g, unsigned int b)
 {
@@ -26,12 +59,12 @@ static u64 rgb(unsigned int r, unsigned int g, unsigned int b)
 
 static void rect(float x1, float y1, float x2, float y2, u64 color)
 {
-    gsKit_prim_sprite(gs, x1, y1, x2, y2, 1, color);
+    gsKit_prim_sprite(gs, x1, screen_y(y1), x2, screen_y(y2), 1, color);
 }
 
 static void line(float x1, float y1, float x2, float y2, u64 color)
 {
-    gsKit_prim_line(gs, x1, y1, x2, y2, 2, color);
+    gsKit_prim_line(gs, x1, screen_y(y1), x2, screen_y(y2), 2, color);
 }
 
 static void outline(float x1, float y1, float x2, float y2, u64 color)
@@ -85,10 +118,12 @@ static const unsigned char *glyph(char c)
     };
     static const unsigned char dash[7] = {0,0,0,0x70,0,0,0};
     static const unsigned char slash[7] = {0x08,0x08,0x10,0x20,0x40,0x80,0x80};
+    static const unsigned char plus[7] = {0,0x20,0x20,0xF8,0x20,0x20,0};
     if (c >= '0' && c <= '9') return digits[c - '0'];
     if (c >= 'A' && c <= 'Z') return letters[c - 'A'];
     if (c == '-') return dash;
     if (c == '/') return slash;
+    if (c == '+') return plus;
     return blank;
 }
 
@@ -187,8 +222,9 @@ static const char *pattern_name(void)
 
 static void draw_frame(void)
 {
-    const int w = gs->Width;
-    const int h = gs->Height;
+    const int w = LOGICAL_WIDTH;
+    const int h = LOGICAL_HEIGHT;
+    const int ui_scale = (current_video_mode()->interlace == GS_NONINTERLACED) ? 2 : 1;
     gsKit_clear(gs, rgb(0,0,0));
     switch (pattern) {
         case 0: draw_grid(w, h); break;
@@ -198,11 +234,28 @@ static void draw_frame(void)
         default: draw_checker(w, h); break;
     }
     if (show_help) {
-        rect(8, h - 42, w - 8, h - 8, rgb(0,0,0));
-        outline(8, h - 42, w - 8, h - 8, rgb(90,90,90));
-        text(16, h - 35, pattern_name(), 1, rgb(255,255,255));
-        text(w - 92, h - 35, pal_mode ? "PAL 50" : "NTSC 60", 1, rgb(255,220,50));
-        text(16, h - 20, "LEFT/RIGHT PATTERN  TRIANGLE MODE  SELECT HELP", 1, rgb(180,180,180));
+        rect(8, h - 60, w - 8, h - 8, rgb(0,0,0));
+        outline(8, h - 60, w - 8, h - 8, rgb(90,90,90));
+        text(16, h - 53, pattern_name(), ui_scale, rgb(255,255,255));
+        text(w - 126, h - 53, current_video_mode()->name, ui_scale, rgb(255,220,50));
+        text(16, h - 35, "LEFT/RIGHT PATTERN  TRIANGLE MODE", ui_scale, rgb(180,180,180));
+        text(16, h - 19, "SELECT HELP  START+SELECT EXIT", ui_scale, rgb(180,180,180));
+    }
+    if (mode_confirm_frames > 0) {
+        int seconds = (mode_confirm_frames + current_video_mode()->refresh_hz - 1) /
+                      current_video_mode()->refresh_hz;
+        char count[3];
+        if (seconds >= 10) {
+            count[0] = '1'; count[1] = '0'; count[2] = 0;
+        } else {
+            count[0] = (char)('0' + seconds); count[1] = 0; count[2] = 0;
+        }
+        rect(128, 176, 512, 304, rgb(0,0,0));
+        outline(128, 176, 512, 304, rgb(255,220,50));
+        text(190, 194, current_video_mode()->name, 2, rgb(255,220,50));
+        text(170, 224, "CROSS KEEP  CIRCLE BACK", 2, rgb(255,255,255));
+        text(244, 258, "AUTO BACK", 2, rgb(180,180,180));
+        text(364, 258, count, 2, rgb(255,80,80));
     }
     gsKit_queue_exec(gs);
     gsKit_sync_flip(gs);
@@ -210,15 +263,16 @@ static void draw_frame(void)
 
 static void init_video(void)
 {
+    const VideoMode *mode = current_video_mode();
     dmaKit_init(D_CTRL_RELE_OFF, D_CTRL_MFD_OFF, D_CTRL_STS_UNSPEC,
                 D_CTRL_STD_OFF, D_CTRL_RCYC_8, 1 << DMA_CHANNEL_GIF);
     dmaKit_chan_init(DMA_CHANNEL_GIF);
     gs = gsKit_init_global();
-    gs->Mode = pal_mode ? GS_MODE_PAL : GS_MODE_NTSC;
-    gs->Width = 640;
-    gs->Height = pal_mode ? 512 : 448;
-    gs->Interlace = GS_INTERLACED;
-    gs->Field = GS_FIELD;
+    gs->Mode = mode->mode;
+    gs->Width = mode->width;
+    gs->Height = mode->height;
+    gs->Interlace = mode->interlace;
+    gs->Field = mode->field;
     gs->PSM = GS_PSM_CT24;
     gs->PSMZ = GS_PSMZ_16S;
     gs->ZBuffering = GS_SETTING_OFF;
@@ -229,11 +283,25 @@ static void init_video(void)
     gsKit_set_test(gs, GS_ZTEST_OFF);
 }
 
-static void switch_video(void)
+static void apply_video_mode(int index)
 {
     gsKit_deinit_global(gs);
-    pal_mode = !pal_mode;
+    video_mode_index = index;
     init_video();
+}
+
+static void preview_next_video_mode(void)
+{
+    if (mode_confirm_frames <= 0)
+        previous_video_mode = video_mode_index;
+    apply_video_mode((video_mode_index + 1) % VIDEO_MODE_COUNT);
+    mode_confirm_frames = current_video_mode()->refresh_hz * MODE_CONFIRM_SECONDS;
+}
+
+static void cancel_video_preview(void)
+{
+    mode_confirm_frames = 0;
+    apply_video_mode(previous_video_mode);
 }
 
 static unsigned int read_buttons(void)
@@ -254,21 +322,45 @@ static void init_pad(void)
     padPortOpen(0, 0, pad_buffer);
 }
 
+static void exit_app(void)
+{
+    padPortClose(0, 0);
+    padEnd();
+    gsKit_deinit_global(gs);
+    SifExitRpc();
+    Exit(0);
+}
+
 int main(int argc, char *argv[])
 {
     (void)argc;
     (void)argv;
+    video_mode_index = (gsKit_detect_signal() == GS_MODE_PAL) ? 0 : 2;
+    previous_video_mode = video_mode_index;
     init_pad();
     init_video();
     for (;;) {
         unsigned int now = read_buttons();
         unsigned int pressed = now & ~old_buttons;
-        if (pressed & (PAD_RIGHT | PAD_CROSS)) pattern = (pattern + 1) % PATTERN_COUNT;
-        if (pressed & PAD_LEFT) pattern = (pattern + PATTERN_COUNT - 1) % PATTERN_COUNT;
-        if (pressed & PAD_TRIANGLE) switch_video();
-        if (pressed & PAD_SELECT) show_help = !show_help;
+        if ((now & (PAD_START | PAD_SELECT)) == (PAD_START | PAD_SELECT))
+            exit_app();
+        if (mode_confirm_frames > 0) {
+            if (pressed & PAD_CROSS)
+                mode_confirm_frames = 0;
+            else if (pressed & PAD_CIRCLE)
+                cancel_video_preview();
+            else if (pressed & PAD_TRIANGLE)
+                preview_next_video_mode();
+        } else {
+            if (pressed & (PAD_RIGHT | PAD_CROSS)) pattern = (pattern + 1) % PATTERN_COUNT;
+            if (pressed & PAD_LEFT) pattern = (pattern + PATTERN_COUNT - 1) % PATTERN_COUNT;
+            if (pressed & PAD_TRIANGLE) preview_next_video_mode();
+            if (pressed & PAD_SELECT) show_help = !show_help;
+        }
         old_buttons = now;
         draw_frame();
+        if (mode_confirm_frames > 0 && --mode_confirm_frames == 0)
+            apply_video_mode(previous_video_mode);
     }
     return 0;
 }

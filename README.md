@@ -11,8 +11,13 @@ Download `PS2Grid.elf` from the latest GitHub Release, copy it to a USB drive,
 and launch it with wLaunchELF/uLaunchELF. It can also be registered as an OPL
 application.
 
-The default mode is PAL 50 Hz at 640x512i. Press **Triangle** to switch between
-PAL 50 Hz and NTSC 60 Hz (640x448i).
+The initial region is detected from the console ROM. PAL consoles start in
+576i/50 and NTSC consoles start in 480i/60.
+
+Available output modes are PAL 576i, PAL 288p, NTSC 480i, and NTSC 240p. Press
+**Triangle** to preview the next mode, then **Cross** to keep it or **Circle**
+to go back. If no choice is made, the previous mode is restored automatically
+after ten seconds.
 
 ## Patterns
 
@@ -26,8 +31,10 @@ PAL 50 Hz and NTSC 60 Hz (640x448i).
 
 - **Left / Right**: previous or next pattern
 - **Cross**: next pattern
-- **Triangle**: switch PAL/NTSC
+- **Triangle**: preview the next video mode
+- **Cross / Circle** during mode preview: keep or restore the mode
 - **Select**: show or hide the on-screen help
+- **Start + Select**: exit to the PS2 Browser
 
 ## Build
 
@@ -37,11 +44,12 @@ gsKit can also build it by running `make`.
 
 ## Project status
 
-The ELF is compiled and structurally validated by the current PS2 toolchain.
-It has also been successfully launched and tested on the project owner's
-physical PlayStation 2. Compatibility with every console revision, cable type,
-and display is not guaranteed; please include those details when opening an
-issue.
+The v1.0 ELF is compiled and structurally validated by the current PS2
+toolchain. It has also been successfully launched and tested on the project
+owner's physical PlayStation 2. The new v1.1 video modes and exit command still
+require physical-hardware validation. Compatibility with every console
+revision, cable type, and display is not guaranteed; please include those
+details when opening an issue.
 
 ## Safety
 
