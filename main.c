@@ -9,7 +9,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#define APP_VERSION "1.2-rc1"
+#define APP_VERSION "1.2"
 #define PATTERN_COUNT 13
 #define VIDEO_MODE_COUNT 4
 #define LOGICAL_WIDTH 640

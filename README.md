@@ -51,12 +51,12 @@ gsKit can also build it by running `make`.
 
 ## Project status
 
-Version 1.1 has been successfully tested by the project owner on a physical
-PlayStation 2 connected to a JVC AV-2130SE CRT television. PAL 576i, PAL 288p,
-NTSC 480i, NTSC 240p, safe automatic/manual mode rollback, and the exit command
-were verified. The new v1.2 patterns and menu still require physical-hardware
-validation. Compatibility with every console revision, cable type, and display
-is not guaranteed; please include those details when opening an issue.
+Version 1.2 has been successfully tested by the project owner on a physical
+PlayStation 2 connected to a JVC AV-2130SE CRT television. All 13 patterns, the
+quick pattern menu, PAL 576i, PAL 288p, NTSC 480i, NTSC 240p, safe automatic
+and manual mode rollback, and the exit command were verified. Compatibility
+with every console revision, cable type, and display is not guaranteed; please
+include those details when opening an issue.
 
 ## Safety
 
