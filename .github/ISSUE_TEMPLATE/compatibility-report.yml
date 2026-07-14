@@ -1,0 +1,70 @@
+name: Hardware compatibility report
+description: Share a successful or failed test on a physical PlayStation 2
+title: "[Compatibility]: "
+labels:
+  - compatibility
+body:
+  - type: input
+    id: console
+    attributes:
+      label: PS2 model and region
+      placeholder: SCPH-50004, PAL
+    validations:
+      required: true
+  - type: input
+    id: launch
+    attributes:
+      label: Launch method
+      placeholder: OPL Apps or wLaunchELF
+    validations:
+      required: true
+  - type: input
+    id: cable
+    attributes:
+      label: Cable or video connection
+      placeholder: RGB SCART, component, S-Video, or composite
+    validations:
+      required: true
+  - type: input
+    id: display
+    attributes:
+      label: Display model
+      placeholder: JVC AV-2130SE CRT
+    validations:
+      required: true
+  - type: checkboxes
+    id: modes
+    attributes:
+      label: Tested video modes
+      options:
+        - label: PAL 576i
+        - label: PAL 288p
+        - label: NTSC 480i
+        - label: NTSC 240p
+    validations:
+      required: true
+  - type: checkboxes
+    id: features
+    attributes:
+      label: Tested features
+      options:
+        - label: All 13 calibration patterns
+        - label: Quick pattern menu
+        - label: Automatic and manual mode rollback
+        - label: Start + Select exit
+  - type: dropdown
+    id: result
+    attributes:
+      label: Overall result
+      options:
+        - Everything works
+        - Works with minor issues
+        - One or more modes do not work
+        - Program does not start
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: Describe flicker, geometry, colour, sync, or launcher-specific behaviour.

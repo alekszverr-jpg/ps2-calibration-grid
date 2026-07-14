@@ -1,0 +1,77 @@
+name: Bug report
+description: Report a reproducible problem in PS2 CRT Test Suite
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      placeholder: v1.2.2
+    validations:
+      required: true
+  - type: input
+    id: console
+    attributes:
+      label: PS2 model and region
+      description: Include the SCPH model when possible.
+      placeholder: SCPH-50004, PAL
+    validations:
+      required: true
+  - type: input
+    id: launch
+    attributes:
+      label: Launch method
+      placeholder: OPL Apps, wLaunchELF, or another launcher
+    validations:
+      required: true
+  - type: input
+    id: video-chain
+    attributes:
+      label: Cable and display
+      placeholder: RGB SCART to JVC AV-2130SE CRT
+    validations:
+      required: true
+  - type: dropdown
+    id: mode
+    attributes:
+      label: Video mode
+      options:
+        - PAL 576i
+        - PAL 288p
+        - NTSC 480i
+        - NTSC 240p
+        - More than one mode
+        - Not mode-specific
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: Describe the exact button sequence and selected pattern.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected result
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual result
+      description: Photos or short video links are welcome when they help.
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checklist
+      options:
+        - label: I reproduced the problem after restarting the console.
+          required: true
+        - label: I included my console, cable, display, and video mode.
+          required: true

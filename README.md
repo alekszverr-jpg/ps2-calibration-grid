@@ -7,6 +7,8 @@ kept for compatibility with existing OPL and launcher configurations.
 
 [Russian documentation / Документация на русском](README_RU.md)
 
+[Changelog](CHANGELOG.md)
+
 ## Download and run
 
 Download `PS2Grid.elf` from the latest GitHub Release, copy it to a USB drive,
@@ -51,16 +53,23 @@ The included GitHub Actions workflow builds and validates the ELF with the
 official `ps2dev/ps2dev` container. A local ps2dev environment with PS2SDK and
 gsKit can also build it by running `make`.
 
+## Feedback and compatibility reports
+
+Use the repository issue forms to report a bug or a successful/failed hardware
+test. Please include the PS2 model and region, launch method, cable type,
+display model, and tested video modes. These details are essential for useful
+compatibility results.
+
 ## Project status
 
 Version 1.2 has been successfully tested by the project owner on a physical
 PlayStation 2 connected to a JVC AV-2130SE CRT television. All 13 patterns, the
 quick pattern menu, PAL 576i, PAL 288p, NTSC 480i, NTSC 240p, safe automatic
-and manual mode rollback, and the exit command were verified. Compatibility
-Version 1.2.1 changes project branding only and keeps the tested pattern and
-video-mode implementation. Compatibility with every console revision, cable
-type, and display is not guaranteed; please include those details when opening
-an issue.
+and manual mode rollback, and the exit command were verified. Versions 1.2.1
+and 1.2.2 change branding and project maintenance only and keep the tested
+pattern and video-mode implementation. Compatibility with every console
+revision, cable type, and display is not guaranteed; please include those
+details when opening an issue.
 
 ## Safety
 
