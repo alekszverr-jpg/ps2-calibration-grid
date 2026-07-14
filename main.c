@@ -9,7 +9,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#define APP_VERSION "1.2"
+#define APP_VERSION "1.2.1"
 #define PATTERN_COUNT 13
 #define VIDEO_MODE_COUNT 4
 #define LOGICAL_WIDTH 640
@@ -315,7 +315,7 @@ static void draw_pattern_menu(int ui_scale)
     const int row_h = 24;
     rect(x1, 28, x2, 452, rgb(0,0,0));
     outline(x1, 28, x2, 452, rgb(255,220,50));
-    text(190, 42, "PS2 GRID V" APP_VERSION, ui_scale, rgb(255,220,50));
+    text(174, 42, "PS2 CRT SUITE V" APP_VERSION, ui_scale, rgb(255,220,50));
     for (i = 0; i < PATTERN_COUNT; ++i) {
         const int y = first_y + i * row_h;
         if (i == menu_selection) {

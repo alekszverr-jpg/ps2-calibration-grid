@@ -1,7 +1,9 @@
-# PS2 Calibration Grid
+# PS2 CRT Test Suite
 
-A standalone calibration-pattern generator for PlayStation 2. It produces a
-single `PS2Grid.elf` and does not need external images or data files.
+A standalone CRT calibration and video test-pattern suite for PlayStation 2.
+It supports 240p, 288p, 480i, and 576i output and produces a single
+`PS2Grid.elf` with no external images or data files. The legacy ELF filename is
+kept for compatibility with existing OPL and launcher configurations.
 
 [Russian documentation / Документация на русском](README_RU.md)
 
@@ -55,8 +57,10 @@ Version 1.2 has been successfully tested by the project owner on a physical
 PlayStation 2 connected to a JVC AV-2130SE CRT television. All 13 patterns, the
 quick pattern menu, PAL 576i, PAL 288p, NTSC 480i, NTSC 240p, safe automatic
 and manual mode rollback, and the exit command were verified. Compatibility
-with every console revision, cable type, and display is not guaranteed; please
-include those details when opening an issue.
+Version 1.2.1 changes project branding only and keeps the tested pattern and
+video-mode implementation. Compatibility with every console revision, cable
+type, and display is not guaranteed; please include those details when opening
+an issue.
 
 ## Safety
 
