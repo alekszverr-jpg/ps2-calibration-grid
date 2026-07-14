@@ -1,0 +1,48 @@
+name: Build PS2 ELF
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "main.c"
+      - "Makefile"
+      - ".github/workflows/build.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: ps2dev/ps2dev:latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Show toolchain versions
+        run: |
+          mips64r5900el-ps2-elf-gcc --version
+          printf 'PS2DEV=%s\nPS2SDK=%s\nGSKIT=%s\n' "$PS2DEV" "$PS2SDK" "$GSKIT"
+
+      - name: Build PS2Grid.elf
+        run: make -j2
+
+      - name: Verify ELF
+        run: |
+          test -s PS2Grid.elf
+          mips64r5900el-ps2-elf-readelf -h PS2Grid.elf
+          sha256sum PS2Grid.elf | tee PS2Grid.elf.sha256
+
+      - name: Upload ELF
+        uses: actions/upload-artifact@v4
+        with:
+          name: PS2Grid-ELF
+          path: |
+            PS2Grid.elf
+            PS2Grid.elf.sha256
+            README_RU.md
+          if-no-files-found: error
+          retention-days: 30
