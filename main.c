@@ -9,7 +9,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#define APP_VERSION "1.3-rc1"
+#define APP_VERSION "1.3"
 #define PATTERN_COUNT 17
 #define MENU_ROWS 9
 #define PATTERN_SCROLL_GRID 13
