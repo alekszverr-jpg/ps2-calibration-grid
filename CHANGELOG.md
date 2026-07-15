@@ -2,6 +2,15 @@
 
 All notable changes to PS2 CRT Test Suite are documented here.
 
+## [1.3-rc1] - 2026-07-15
+
+- Added Scroll Grid with six selectable speeds and both directions.
+- Added moving Drop Shadow, adjustable Flicker, and camera-friendly Frame Timer
+  patterns.
+- Added pause/resume control for all dynamic patterns.
+- Expanded the pattern menu to two columns for 17 total patterns.
+- Kept all four safe SD modes and their rollback behaviour unchanged.
+
 ## [1.2.2] - 2026-07-14
 
 - Updated the cloud build to `actions/checkout@v7` and
@@ -36,6 +45,7 @@ All notable changes to PS2 CRT Test Suite are documented here.
 
 - Initial public release with five calibration patterns.
 
+[1.3-rc1]: https://github.com/alekszverr-jpg/ps2-crt-test-suite/compare/v1.2.2...v1.3-rc1
 [1.2.2]: https://github.com/alekszverr-jpg/ps2-crt-test-suite/compare/v1.2.1...v1.2.2
 [1.2.1]: https://github.com/alekszverr-jpg/ps2-crt-test-suite/compare/v1.2...v1.2.1
 [1.2]: https://github.com/alekszverr-jpg/ps2-crt-test-suite/compare/v1.1...v1.2

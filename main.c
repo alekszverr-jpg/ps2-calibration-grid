@@ -9,8 +9,14 @@
 #include <stdint.h>
 #include <string.h>
 
-#define APP_VERSION "1.2.2"
-#define PATTERN_COUNT 13
+#define APP_VERSION "1.3-rc1"
+#define PATTERN_COUNT 17
+#define MENU_ROWS 9
+#define PATTERN_SCROLL_GRID 13
+#define PATTERN_DROP_SHADOW 14
+#define PATTERN_FLICKER 15
+#define PATTERN_FRAME_TIMER 16
+#define FIRST_DYNAMIC_PATTERN PATTERN_SCROLL_GRID
 #define VIDEO_MODE_COUNT 4
 #define LOGICAL_WIDTH 640
 #define LOGICAL_HEIGHT 480
@@ -43,11 +49,25 @@ static int menu_selection;
 static int video_mode_index;
 static int previous_video_mode;
 static int mode_confirm_frames;
+static unsigned int pattern_frame;
+static int animation_paused;
+static int scroll_speed_index = 4;
+static int flicker_period_index;
 
 static const char *pattern_names[PATTERN_COUNT] = {
     "GEOMETRY", "OVERSCAN", "PLUGE", "COLOR BARS", "CHECKER 16",
     "CONVERGENCE", "SHARPNESS", "COLOR BLEED", "FULL WHITE",
-    "FULL GRAY", "FULL RED", "FULL GREEN", "FULL BLUE"
+    "FULL GRAY", "FULL RED", "FULL GREEN", "FULL BLUE", "SCROLL GRID",
+    "DROP SHADOW", "FLICKER", "FRAME TIMER"
+};
+
+static const int scroll_speeds[6] = {-4, -2, -1, 1, 2, 4};
+static const char *scroll_speed_names[6] = {
+    "SPEED -4", "SPEED -2", "SPEED -1", "SPEED +1", "SPEED +2", "SPEED +4"
+};
+static const int flicker_periods[4] = {1, 2, 4, 8};
+static const char *flicker_period_names[4] = {
+    "PERIOD 1 FRAME", "PERIOD 2 FRAMES", "PERIOD 4 FRAMES", "PERIOD 8 FRAMES"
 };
 
 static const VideoMode *current_video_mode(void)
@@ -301,6 +321,105 @@ static void draw_full_field(int w, int h, u64 color)
     rect(0, 0, w, h, color);
 }
 
+static void format_number(char *out, unsigned int value, int digits)
+{
+    int i;
+    out[digits] = 0;
+    for (i = digits - 1; i >= 0; --i) {
+        out[i] = (char)('0' + value % 10u);
+        value /= 10u;
+    }
+}
+
+static void draw_scroll_grid(int w, int h)
+{
+    const int speed = scroll_speeds[scroll_speed_index];
+    int offset = ((int)(pattern_frame % 100000u) * speed) % 32;
+    int marker = ((int)(pattern_frame % (unsigned int)(w + 96)) * speed) % (w + 96);
+    int x, y;
+    if (offset < 0) offset += 32;
+    if (marker < 0) marker += w + 96;
+    marker -= 48;
+    rect(0, 0, w, h, rgb(12,12,12));
+    for (x = -32 + offset; x < w + 32; x += 32)
+        line(x, 0, x, h, (x - offset) % 128 ? rgb(75,75,75) : rgb(190,190,190));
+    for (y = 0; y <= h; y += 32)
+        line(0, y, w, y, (y % 128) ? rgb(75,75,75) : rgb(190,190,190));
+    rect(marker - 20, h / 2 - 20, marker + 20, h / 2 + 20, rgb(255,220,50));
+    outline(marker - 24, h / 2 - 24, marker + 24, h / 2 + 24, rgb(255,255,255));
+    rect(12, 12, 142, 36, rgb(0,0,0));
+    text(20, 18, scroll_speed_names[scroll_speed_index], 2, rgb(255,220,50));
+}
+
+static void draw_drop_shadow(int w, int h)
+{
+    const int size = 32;
+    const int travel = w - 160;
+    int cycle = ((int)(pattern_frame % (unsigned int)travel) * 2) % (travel * 2);
+    int object_x;
+    int x, y;
+    if (cycle > travel) cycle = travel * 2 - cycle;
+    object_x = 48 + cycle;
+    for (y = 0; y < h; y += size)
+        for (x = 0; x < w; x += size)
+            rect(x, y, x + size, y + size,
+                 ((x / size + y / size) & 1) ? rgb(45,75,105) : rgb(90,125,155));
+    if ((pattern_frame & 1u) == 0)
+        rect(object_x + 10, h / 2 - 22, object_x + 74, h / 2 + 42, rgb(0,0,0));
+    rect(object_x, h / 2 - 32, object_x + 64, h / 2 + 32, rgb(235,235,235));
+    outline(object_x, h / 2 - 32, object_x + 64, h / 2 + 32, rgb(255,255,255));
+    line(object_x, h / 2, object_x + 64, h / 2, rgb(70,70,70));
+    line(object_x + 32, h / 2 - 32, object_x + 32, h / 2 + 32, rgb(70,70,70));
+}
+
+static void draw_flicker(int w, int h)
+{
+    const int period = flicker_periods[flicker_period_index];
+    const int bright = ((pattern_frame / (unsigned int)period) & 1u) ? 176 : 80;
+    rect(0, 0, w / 2, h, rgb(128,128,128));
+    rect(w / 2, 0, w, h, rgb(bright,bright,bright));
+    outline(8, 8, w / 2 - 8, h - 8, rgb(255,255,255));
+    outline(w / 2 + 8, 8, w - 8, h - 8, rgb(255,255,255));
+    rect(12, 12, 218, 36, rgb(0,0,0));
+    text(20, 18, flicker_period_names[flicker_period_index], 2, rgb(255,220,50));
+}
+
+static void draw_frame_timer(int w, int h)
+{
+    const unsigned int refresh = (unsigned int)current_video_mode()->refresh_hz;
+    const unsigned int frame_in_second = pattern_frame % refresh;
+    char frame_text[12] = "FRAME 00000";
+    char second_text[12] = "SECOND 0000";
+    char tick_text[8] = "TICK 00";
+    int i;
+    format_number(frame_text + 6, pattern_frame % 100000u, 5);
+    format_number(second_text + 7, (pattern_frame / refresh) % 10000u, 4);
+    format_number(tick_text + 5, frame_in_second, 2);
+    rect(0, 0, w, h, rgb(8,8,8));
+    for (i = 0; i < 10; ++i) {
+        const int x = 45 + i * 55;
+        char digit[2] = {(char)('0' + i), 0};
+        u64 color = (i == (int)(pattern_frame % 10u)) ? rgb(255,220,50) : rgb(55,55,55);
+        rect(x, 62, x + 44, 116, color);
+        outline(x, 62, x + 44, 116, rgb(180,180,180));
+        text(x + 13, 79, digit, 2, rgb(255,255,255));
+    }
+    text(170, 158, frame_text, 3, rgb(255,255,255));
+    text(170, 202, second_text, 3, rgb(190,190,190));
+    text(242, 246, tick_text, 2, rgb(255,220,50));
+    rect((pattern_frame * 4u) % (unsigned int)w, h - 138,
+         (pattern_frame * 4u) % (unsigned int)w + 6, h - 82, rgb(255,80,80));
+    rect(w - 80, 18, w - 18, 80,
+         (frame_in_second == 0) ? rgb(255,255,255) : rgb(25,25,25));
+}
+
+static void draw_pause_badge(int w)
+{
+    rect(w / 2 - 72, 42, w / 2 + 72, 78, rgb(0,0,0));
+    outline(w / 2 - 72, 42, w / 2 + 72, 78, rgb(255,220,50));
+    text(w / 2 - 48, 52, "PAUSED", 2, rgb(255,220,50));
+}
+
 static const char *pattern_name(void)
 {
     return pattern_names[pattern];
@@ -309,24 +428,28 @@ static const char *pattern_name(void)
 static void draw_pattern_menu(int ui_scale)
 {
     int i;
-    const int x1 = 104;
-    const int x2 = 536;
-    const int first_y = 82;
-    const int row_h = 24;
+    const int x1 = 32;
+    const int x2 = 608;
+    const int first_y = 92;
+    const int row_h = 32;
+    const int column_width = 280;
     rect(x1, 28, x2, 452, rgb(0,0,0));
     outline(x1, 28, x2, 452, rgb(255,220,50));
     text(174, 42, "PS2 CRT SUITE V" APP_VERSION, ui_scale, rgb(255,220,50));
     for (i = 0; i < PATTERN_COUNT; ++i) {
-        const int y = first_y + i * row_h;
+        const int column = i / MENU_ROWS;
+        const int row = i % MENU_ROWS;
+        const int x = x1 + 22 + column * column_width;
+        const int y = first_y + row * row_h;
         if (i == menu_selection) {
-            rect(x1 + 12, y - 5, x2 - 12, y + 17, rgb(55,45,0));
-            outline(x1 + 12, y - 5, x2 - 12, y + 17, rgb(150,125,20));
+            rect(x - 10, y - 5, x + 250, y + 17, rgb(55,45,0));
+            outline(x - 10, y - 5, x + 250, y + 17, rgb(150,125,20));
         }
-        text(x1 + 28, y, pattern_names[i], ui_scale,
+        text(x, y, pattern_names[i], ui_scale,
              (i == menu_selection) ? rgb(255,255,255) : rgb(150,150,150));
     }
-    text(152, 416, "UP/DOWN SELECT  CROSS OPEN", ui_scale, rgb(190,190,190));
-    text(194, 434, "CIRCLE BACK", ui_scale, rgb(150,150,150));
+    text(96, 402, "UP/DOWN SELECT  LEFT/RIGHT COLUMN", ui_scale, rgb(190,190,190));
+    text(152, 430, "CROSS OPEN  CIRCLE BACK", ui_scale, rgb(150,150,150));
 }
 
 static void draw_frame(void)
@@ -348,14 +471,22 @@ static void draw_frame(void)
         case 9: draw_full_field(w, h, rgb(128,128,128)); break;
         case 10: draw_full_field(w, h, rgb(255,0,0)); break;
         case 11: draw_full_field(w, h, rgb(0,255,0)); break;
-        default: draw_full_field(w, h, rgb(0,0,255)); break;
+        case 12: draw_full_field(w, h, rgb(0,0,255)); break;
+        case PATTERN_SCROLL_GRID: draw_scroll_grid(w, h); break;
+        case PATTERN_DROP_SHADOW: draw_drop_shadow(w, h); break;
+        case PATTERN_FLICKER: draw_flicker(w, h); break;
+        case PATTERN_FRAME_TIMER: draw_frame_timer(w, h); break;
+        default: draw_grid(w, h); break;
     }
+    if (animation_paused && pattern >= FIRST_DYNAMIC_PATTERN)
+        draw_pause_badge(w);
     if (show_help) {
-        rect(8, h - 60, w - 8, h - 8, rgb(0,0,0));
-        outline(8, h - 60, w - 8, h - 8, rgb(90,90,90));
-        text(16, h - 53, pattern_name(), ui_scale, rgb(255,255,255));
-        text(w - 126, h - 53, current_video_mode()->name, ui_scale, rgb(255,220,50));
-        text(16, h - 35, "LEFT/RIGHT PATTERN  SQUARE MENU", ui_scale, rgb(180,180,180));
+        rect(8, h - 78, w - 8, h - 8, rgb(0,0,0));
+        outline(8, h - 78, w - 8, h - 8, rgb(90,90,90));
+        text(16, h - 71, pattern_name(), ui_scale, rgb(255,255,255));
+        text(w - 126, h - 71, current_video_mode()->name, ui_scale, rgb(255,220,50));
+        text(16, h - 53, "LEFT/RIGHT PATTERN  SQUARE MENU", ui_scale, rgb(180,180,180));
+        text(16, h - 35, "UP/DOWN ADJUST  START PAUSE", ui_scale, rgb(180,180,180));
         text(16, h - 19, "TRIANGLE MODE  SELECT HELP  START+SELECT EXIT", ui_scale, rgb(180,180,180));
     }
     if (menu_open)
@@ -423,6 +554,45 @@ static void cancel_video_preview(void)
     apply_video_mode(previous_video_mode);
 }
 
+static void select_pattern(int index)
+{
+    pattern = (index + PATTERN_COUNT) % PATTERN_COUNT;
+    pattern_frame = 0;
+    animation_paused = 0;
+}
+
+static void move_menu_selection(int direction)
+{
+    const int column = menu_selection / MENU_ROWS;
+    int count = PATTERN_COUNT - column * MENU_ROWS;
+    int row = menu_selection % MENU_ROWS;
+    if (count > MENU_ROWS) count = MENU_ROWS;
+    row = (row + direction + count) % count;
+    menu_selection = column * MENU_ROWS + row;
+}
+
+static void switch_menu_column(void)
+{
+    if (menu_selection < MENU_ROWS) {
+        menu_selection += MENU_ROWS;
+        if (menu_selection >= PATTERN_COUNT)
+            menu_selection = PATTERN_COUNT - 1;
+    } else {
+        menu_selection -= MENU_ROWS;
+    }
+}
+
+static void adjust_dynamic_pattern(int direction)
+{
+    if (pattern == PATTERN_SCROLL_GRID) {
+        scroll_speed_index = (scroll_speed_index + direction + 6) % 6;
+        pattern_frame = 0;
+    } else if (pattern == PATTERN_FLICKER) {
+        flicker_period_index = (flicker_period_index + direction + 4) % 4;
+        pattern_frame = 0;
+    }
+}
+
 static unsigned int read_buttons(void)
 {
     struct padButtonStatus status;
@@ -472,18 +642,24 @@ int main(int argc, char *argv[])
                 preview_next_video_mode();
         } else if (menu_open) {
             if (pressed & PAD_UP)
-                menu_selection = (menu_selection + PATTERN_COUNT - 1) % PATTERN_COUNT;
+                move_menu_selection(-1);
             if (pressed & PAD_DOWN)
-                menu_selection = (menu_selection + 1) % PATTERN_COUNT;
+                move_menu_selection(1);
+            if (pressed & (PAD_LEFT | PAD_RIGHT))
+                switch_menu_column();
             if (pressed & PAD_CROSS) {
-                pattern = menu_selection;
+                select_pattern(menu_selection);
                 menu_open = 0;
             } else if (pressed & (PAD_CIRCLE | PAD_SQUARE)) {
                 menu_open = 0;
             }
         } else {
-            if (pressed & (PAD_RIGHT | PAD_CROSS)) pattern = (pattern + 1) % PATTERN_COUNT;
-            if (pressed & PAD_LEFT) pattern = (pattern + PATTERN_COUNT - 1) % PATTERN_COUNT;
+            if (pressed & (PAD_RIGHT | PAD_CROSS)) select_pattern(pattern + 1);
+            if (pressed & PAD_LEFT) select_pattern(pattern - 1);
+            if (pressed & PAD_UP) adjust_dynamic_pattern(1);
+            if (pressed & PAD_DOWN) adjust_dynamic_pattern(-1);
+            if ((pressed & PAD_START) && pattern >= FIRST_DYNAMIC_PATTERN)
+                animation_paused = !animation_paused;
             if (pressed & PAD_TRIANGLE) preview_next_video_mode();
             if (pressed & PAD_SQUARE) {
                 menu_selection = pattern;
@@ -495,6 +671,8 @@ int main(int argc, char *argv[])
         draw_frame();
         if (mode_confirm_frames > 0 && --mode_confirm_frames == 0)
             apply_video_mode(previous_video_mode);
+        if (!animation_paused && !menu_open && mode_confirm_frames <= 0)
+            ++pattern_frame;
     }
     return 0;
 }

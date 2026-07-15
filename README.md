@@ -34,14 +34,21 @@ after ten seconds.
 - one- and two-pixel vertical and horizontal sharpness fields
 - colour-bleed and chroma alignment bars
 - full-screen white, gray, red, green, and blue fields
+- horizontally scrolling grid with six selectable speeds and directions
+- alternating drop-shadow test over a moving object
+- split-screen flicker comparison with four selectable frame periods
+- frame timer with frame/second counters, decade indicators, and a moving marker
 
 ## Controls
 
 - **Left / Right**: previous or next pattern
 - **Cross**: next pattern
 - **Square**: open or close the pattern menu
-- **Up / Down**, then **Cross**: select and open a pattern from the menu
+- **Up / Down**, **Left / Right**, then **Cross**: select a pattern in the
+  two-column menu
 - **Circle**: close the pattern menu without changing the pattern
+- **Up / Down** on Scroll Grid or Flicker: adjust speed or frame period
+- **Start** on a dynamic pattern: pause or resume animation
 - **Triangle**: preview the next video mode
 - **Cross / Circle** during mode preview: keep or restore the mode
 - **Select**: show or hide the on-screen help
@@ -71,10 +78,15 @@ pattern and video-mode implementation. Compatibility with every console
 revision, cable type, and display is not guaranteed; please include those
 details when opening an issue.
 
+The dynamic tests and expanded menu in v1.3-rc1 still require validation on
+physical hardware.
+
 ## Safety
 
 Do not leave a static pattern displayed for a long time on plasma or OLED
 panels. Do not leave the full-white field on a CRT for an extended period.
+The Flicker pattern alternates brightness rapidly; stop the test immediately if
+it causes discomfort, dizziness, or visual symptoms.
 Record the original values before changing a television's service-menu settings.
 
 Released under the [MIT License](LICENSE).

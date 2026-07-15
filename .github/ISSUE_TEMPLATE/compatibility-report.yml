@@ -48,10 +48,13 @@ body:
     attributes:
       label: Tested features
       options:
-        - label: All 13 calibration patterns
+        - label: All 17 calibration patterns
         - label: Quick pattern menu
         - label: Automatic and manual mode rollback
         - label: Start + Select exit
+        - label: Scroll Grid speed and direction controls
+        - label: Drop Shadow and Flicker tests
+        - label: Frame Timer and animation pause
   - type: dropdown
     id: result
     attributes:
