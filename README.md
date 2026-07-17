@@ -9,6 +9,8 @@ kept for compatibility with existing OPL and launcher configurations.
 
 [Changelog](CHANGELOG.md)
 
+[Roadmap](ROADMAP.md)
+
 ## Download and run
 
 Download `PS2Grid.elf` from the latest GitHub Release, copy it to a USB drive,
